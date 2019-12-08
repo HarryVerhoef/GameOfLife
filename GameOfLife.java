@@ -1,6 +1,7 @@
 import java.util.*;
 import java.io.*;
 import java.awt.Point;
+import java.math.BigInteger;
 
 public class GameOfLife {
 
@@ -20,24 +21,43 @@ public class GameOfLife {
             map.add(string_row);
         }
 
-        map = padMap(map);
+        map = resizeMap(map).getSecond();
 
         System.out.println("Initial map:\n");
         printMap(map);
 
+        BigInteger n = BigInteger.valueOf(Integer.parseInt(args[1]));
+        n = n.mod(choose((map.size() - 2) * (map.get(0).size() - 2), 2));
+        System.out.println(n);
+        System.out.println(choose((map.size() - 2) * (map.get(0).size() - 2), 2));
 
 
-        driver(map, Integer.parseInt(args[1]));
+
+        driver(map, n);
 
 
 
     }
 
-    public static void driver(ArrayList<ArrayList<String>> map, int n) {
-        for (int i = 0; i < n; i++) {
-            map = generateNextState(map);
+    public static void driver(ArrayList<ArrayList<String>> map, BigInteger n) {
+        BigInteger i = BigInteger.ZERO;
+        int comparison = i.compareTo(n);
+
+        while (comparison == -1) {
+            i = i.add(BigInteger.ONE);
+            comparison = i.compareTo(n);
+            ArrayList<ArrayList<String>> newMap = generateNextState(map);
+            if (newMap.equals(map)) {
+                break;
+            } else {
+                map = generateNextState(map);
+            }
+
             printMap(map);
         }
+
+        System.out.println("Final map:");
+        printMap(resizeMap(map).getSecond());
     }
 
 
@@ -49,62 +69,26 @@ public class GameOfLife {
         if (rows == 0 || cols == 0)
             return;
 
-
-
-        // Draw map top
-        // System.out.print("0  ");
-        // for (int i = 0; i < cols + 1; i++) {
-        //     System.out.print("0  ");
-        // }
-        // System.out.println("");
-
-
         // Draw map body
         for (ArrayList<String> row : map) {
-            // System.out.println(row.toString());
-
-
-            // System.out.print("0  ");
             for (String cell : row) {
                 System.out.print(cell + "  ");
             }
-            // System.out.print("0");
             System.out.println("");
         }
 
-        // Draw map bottom
-        // System.out.print("0  ");
-        // for (int i = 0; i < cols + 1; i++) {
-        //     System.out.print("0  ");
-        // }
         System.out.println("\n");
     }
 
 
     public static ArrayList<ArrayList<String>> generateNextState(ArrayList<ArrayList<String>> map) {
+
+        Pair<ArrayList<Point>, ArrayList<ArrayList<String>>> resizedPair = resizeMap(map);
+        ArrayList<Point> liveCells = resizedPair.getFirst();
+        map = resizedPair.getSecond();
         int rows = map.size();
         int cols = map.get(0).size();
-        boolean hasPaddedMap = false;
-        ArrayList<Point> liveCells = new ArrayList<>();
 
-
-        // Scan map and populate liveCells ArrayList
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (map.get(i).get(j).equals("1")) {
-                    liveCells.add(new Point(j, i));
-                    if (!hasPaddedMap && (i == 1 || i == cols - 1 || j == 1 || j == rows - 1)) {
-                        map = padMap(map);
-                        rows = map.size();
-                        cols = map.get(0).size();
-                        i = 0;
-                        j = 0;
-                        hasPaddedMap = true;
-                        liveCells.clear();
-                    }
-                }
-            }
-        }
 
         ArrayList<ArrayList<Integer>> adjacentMap = new ArrayList<>();
         ArrayList<Integer> zeroRow = new ArrayList<Integer>();
@@ -158,7 +142,7 @@ public class GameOfLife {
     }
 
     public static ArrayList<ArrayList<String>> padMap(ArrayList<ArrayList<String>> map) {
-        printMap(map);
+        System.out.println("Padding map...");
         int rows = map.size();
         int cols = map.get(0).size();
 
@@ -179,6 +163,107 @@ public class GameOfLife {
         }
 
         return map;
+    }
+
+    public static ArrayList<ArrayList<String>> shrinkMap(ArrayList<ArrayList<String>> map, int n) {
+        System.out.println("Shrinking map...");
+
+
+        for (int i = 0; i < n; i++) {
+            // Remove first and last row
+            map.remove(0);
+            map.remove(map.size() - 1);
+
+            // Remove 0s on side of body
+            for (ArrayList<String> row : map) {
+                row.remove(0);
+                row.remove(row.size() - 1);
+            }
+        }
+
+        return map;
+    }
+
+    public static Pair<ArrayList<Point>, ArrayList<ArrayList<String>>> resizeMap(ArrayList<ArrayList<String>> map) {
+        int rows = map.size();
+        int cols = map.get(0).size();
+        ArrayList<Point> liveCells = new ArrayList<>();
+
+
+        // Scan map and populate liveCells ArrayList
+        int minI = cols - 1;
+        int maxI = 0;
+        int minJ = rows - 1;
+        int maxJ = 0;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (map.get(i).get(j).equals("1")) {
+                    minI = Math.min(minI, i);
+                    maxI = Math.max(maxI, i);
+                    minJ = Math.min(minJ, j);
+                    maxJ = Math.max(maxJ, j);
+                    liveCells.add(new Point(j, i));
+                }
+            }
+        }
+
+        if (liveCells.size() != 0) {
+            if (minI == 0 || maxI == rows - 1 || minJ == 0 || maxJ == cols - 1) {
+                map = padMap(map);
+                for (Point p : liveCells) {
+                    p.translate(1, 1);
+                }
+            } else if (minI > 1 && maxI < rows - 2 && minJ > 1 && maxJ < cols - 2) {
+                System.out.println(minI);
+                System.out.println(maxI);
+                System.out.println("");
+                System.out.println(rows);
+                System.out.println(cols);
+                System.out.println("");
+                System.out.println(minJ);
+                System.out.println(maxJ);
+                int n = Math.min(Math.min(minI - 1, rows - maxI - 2), Math.min(minJ - 1, cols - maxJ - 2));
+                System.out.println("======" + Integer.toString(n));
+                map = shrinkMap(map, n);
+                for (Point p : liveCells) {
+                    p.translate(-n, -n);
+                }
+            }
+        }
+
+
+        return new Pair(liveCells, map);
+    }
+
+
+    // choose function taken from https://stackoverflow.com/a/2929897
+    public static BigInteger choose(int N, int K) {
+        BigInteger ret = BigInteger.ONE;
+        for (int k = 0; k < K; k++) {
+            ret = ret.multiply(BigInteger.valueOf(N-k))
+                     .divide(BigInteger.valueOf(k+1));
+        }
+        return ret;
+    }
+
+
+    // heterogenous Pair container class used for resizeMap method
+    private static class Pair<T, U> {
+        T first;
+        U second;
+
+        Pair(T first, U second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        T getFirst() {
+            return this.first;
+        }
+
+        U getSecond() {
+            return this.second;
+        }
     }
 
 
