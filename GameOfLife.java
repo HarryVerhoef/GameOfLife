@@ -6,8 +6,8 @@ public class GameOfLife {
 
     public static void main(String[] args) throws FileNotFoundException {
 
-        if (args.length == 0) {
-            System.out.println("Please specify a file to read: java GameOfLife /path/to/file");
+        if (args.length != 2) {
+            System.out.println("Please specify a file to read and a number of iterations: java GameOfLife /path/to/file n");
             return;
         }
 
@@ -25,9 +25,19 @@ public class GameOfLife {
         System.out.println("Initial map:\n");
         printMap(map);
 
-        System.out.println("After parse 1:\n");
-        map = generateNextState(map);
-        printMap(map);
+
+
+        driver(map, Integer.parseInt(args[1]));
+
+
+
+    }
+
+    public static void driver(ArrayList<ArrayList<String>> map, int n) {
+        for (int i = 0; i < n; i++) {
+            map = generateNextState(map);
+            printMap(map);
+        }
     }
 
 
@@ -74,8 +84,6 @@ public class GameOfLife {
     public static ArrayList<ArrayList<String>> generateNextState(ArrayList<ArrayList<String>> map) {
         int rows = map.size();
         int cols = map.get(0).size();
-        System.out.println(rows);
-        System.out.println(cols);
         boolean hasPaddedMap = false;
         ArrayList<Point> liveCells = new ArrayList<>();
 
@@ -83,7 +91,6 @@ public class GameOfLife {
         // Scan map and populate liveCells ArrayList
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                System.out.println(map.get(i).get(j));
                 if (map.get(i).get(j).equals("1")) {
                     liveCells.add(new Point(j, i));
                     if (!hasPaddedMap && (i == 1 || i == cols - 1 || j == 1 || j == rows - 1)) {
@@ -98,11 +105,6 @@ public class GameOfLife {
                 }
             }
         }
-        for (Point p : liveCells) {
-            System.out.println(p);
-        }
-
-        printMap(map);
 
         ArrayList<ArrayList<Integer>> adjacentMap = new ArrayList<>();
         ArrayList<Integer> zeroRow = new ArrayList<Integer>();
@@ -131,9 +133,6 @@ public class GameOfLife {
             adjacentMap.get(y - 1).set(x, adjacentMap.get(y - 1).get(x) + 1);
             adjacentMap.get(y - 1).set(x + 1, adjacentMap.get(y - 1).get(x + 1) + 1);
 
-            for (ArrayList<Integer> row : adjacentMap) {
-                System.out.println(row);
-            }
             System.out.println("");
         }
 
@@ -144,7 +143,7 @@ public class GameOfLife {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 int numIntersections = adjacentMap.get(i).get(j);
-                if (map.get(i).get(j) == "1") {
+                if (map.get(i).get(j).equals("1")) {
                     if (numIntersections == 0 || numIntersections == 1 || numIntersections > 3) {
                         newMap.get(i).set(j, "0");
                     }
@@ -159,7 +158,6 @@ public class GameOfLife {
     }
 
     public static ArrayList<ArrayList<String>> padMap(ArrayList<ArrayList<String>> map) {
-        System.out.println("padding map:");
         printMap(map);
         int rows = map.size();
         int cols = map.get(0).size();
