@@ -5,6 +5,7 @@ import java.math.BigInteger;
 
 public class GameOfLife {
 
+    // Entry point of the program, takes 2 arguments: filename and n
     public static void main(String[] args) throws FileNotFoundException {
 
         if (args.length != 2) {
@@ -16,7 +17,7 @@ public class GameOfLife {
 
         Scanner sc = new Scanner(new BufferedReader(new FileReader(args[0])));
 
-        while (sc.hasNextLine()) { // Need to check grid is square
+        while (sc.hasNextLine()) {
             ArrayList<String> string_row = new ArrayList<>(Arrays.asList(sc.nextLine().split(" ")));
             map.add(string_row);
         }
@@ -25,13 +26,9 @@ public class GameOfLife {
 
         System.out.println("Initial map:\n");
         printMap(map);
+        System.out.println("\n\n");
 
-        BigInteger n = BigInteger.valueOf(Integer.parseInt(args[1]));
-        n = n.mod(choose((map.size() - 2) * (map.get(0).size() - 2), 2));
-        System.out.println(n);
-        System.out.println(choose((map.size() - 2) * (map.get(0).size() - 2), 2));
-
-
+        long n = Long.parseLong(args[1]);
 
         driver(map, n);
 
@@ -39,28 +36,41 @@ public class GameOfLife {
 
     }
 
-    public static void driver(ArrayList<ArrayList<String>> map, BigInteger n) {
-        BigInteger i = BigInteger.ZERO;
-        int comparison = i.compareTo(n);
+    // The iterative method that controls the main flow of the program, also
+    // checks for and mitigates cycles using a HashMap
+    public static void driver(ArrayList<ArrayList<String>> map, long n) {
+        HashMap<String, Long> hm = new HashMap<>();
+        hm.put(encodeMap(map), 0L);
+        boolean cycleFound = false;
+        long totalIterations = 0L;
 
-        while (comparison == -1) {
-            i = i.add(BigInteger.ONE);
-            comparison = i.compareTo(n);
-            ArrayList<ArrayList<String>> newMap = generateNextState(map);
-            if (newMap.equals(map)) {
-                break;
-            } else {
-                map = generateNextState(map);
-            }
-
+        for (long i = 1; i <= n; i++) {
+            totalIterations++;
+            System.out.println("iteration " + Long.toString(totalIterations) + ":");
+            map = resizeMap(generateNextState(map)).getSecond();
             printMap(map);
+            String primNewMap = encodeMap(map);
+
+            long cycleCheck = hm.getOrDefault(primNewMap, 0L);
+            if (cycleCheck == 0L) {
+                hm.put(primNewMap, i);
+            } else if (!cycleFound) {
+                System.out.println("Cycle detected: iteration " + cycleCheck + " to " + i);
+                n = (n - i) % (i - cycleCheck);
+                i = 0;
+                System.out.println("New n: " + Long.toString(n));
+                cycleFound = true;
+            }
         }
 
-        System.out.println("Final map:");
+        System.out.println("FINISHED:");
+        System.out.println("Total iterations: " + Long.toString(totalIterations));
+
         printMap(resizeMap(map).getSecond());
+
     }
 
-
+    // A method to output the map to stdout
     public static void printMap(ArrayList<ArrayList<String>> map) {
 
         int rows = map.size();
@@ -80,7 +90,7 @@ public class GameOfLife {
         System.out.println("\n");
     }
 
-
+    // Performs the main calculation: Calculating the new map
     public static ArrayList<ArrayList<String>> generateNextState(ArrayList<ArrayList<String>> map) {
 
         Pair<ArrayList<Point>, ArrayList<ArrayList<String>>> resizedPair = resizeMap(map);
@@ -117,7 +127,6 @@ public class GameOfLife {
             adjacentMap.get(y - 1).set(x, adjacentMap.get(y - 1).get(x) + 1);
             adjacentMap.get(y - 1).set(x + 1, adjacentMap.get(y - 1).get(x + 1) + 1);
 
-            System.out.println("");
         }
 
 
@@ -137,10 +146,13 @@ public class GameOfLife {
             }
         }
 
+
+
         return newMap;
 
     }
 
+    // Pads the map with 1 layer of inactive cells
     public static ArrayList<ArrayList<String>> padMap(ArrayList<ArrayList<String>> map) {
         System.out.println("Padding map...");
         int rows = map.size();
@@ -165,6 +177,7 @@ public class GameOfLife {
         return map;
     }
 
+    // Method to remove border of inactive cells from map (of thickness n)
     public static ArrayList<ArrayList<String>> shrinkMap(ArrayList<ArrayList<String>> map, int n) {
         System.out.println("Shrinking map...");
 
@@ -184,6 +197,7 @@ public class GameOfLife {
         return map;
     }
 
+    // Method to resize map and contain location of active cells
     public static Pair<ArrayList<Point>, ArrayList<ArrayList<String>>> resizeMap(ArrayList<ArrayList<String>> map) {
         int rows = map.size();
         int cols = map.get(0).size();
@@ -207,6 +221,7 @@ public class GameOfLife {
             }
         }
 
+        // Determine if map resizing (padding/shrinking) is required and if so, do so
         if (liveCells.size() != 0) {
             if (minI == 0 || maxI == rows - 1 || minJ == 0 || maxJ == cols - 1) {
                 map = padMap(map);
@@ -214,16 +229,7 @@ public class GameOfLife {
                     p.translate(1, 1);
                 }
             } else if (minI > 1 && maxI < rows - 2 && minJ > 1 && maxJ < cols - 2) {
-                System.out.println(minI);
-                System.out.println(maxI);
-                System.out.println("");
-                System.out.println(rows);
-                System.out.println(cols);
-                System.out.println("");
-                System.out.println(minJ);
-                System.out.println(maxJ);
                 int n = Math.min(Math.min(minI - 1, rows - maxI - 2), Math.min(minJ - 1, cols - maxJ - 2));
-                System.out.println("======" + Integer.toString(n));
                 map = shrinkMap(map, n);
                 for (Point p : liveCells) {
                     p.translate(-n, -n);
@@ -235,19 +241,17 @@ public class GameOfLife {
         return new Pair(liveCells, map);
     }
 
-
-    // choose function taken from https://stackoverflow.com/a/2929897
-    public static BigInteger choose(int N, int K) {
-        BigInteger ret = BigInteger.ONE;
-        for (int k = 0; k < K; k++) {
-            ret = ret.multiply(BigInteger.valueOf(N-k))
-                     .divide(BigInteger.valueOf(k+1));
+    // Encodes map to a unique string representation so that the map representation is immutable
+    public static String encodeMap(ArrayList<ArrayList<String>> map) {
+        StringBuilder sb = new StringBuilder();
+        for (ArrayList<String> row : map) {
+            sb.append(row.toString());
         }
-        return ret;
+        return sb.toString();
     }
 
 
-    // heterogenous Pair container class used for resizeMap method
+    // Heterogenous Pair container class used for resizeMap method
     private static class Pair<T, U> {
         T first;
         U second;
