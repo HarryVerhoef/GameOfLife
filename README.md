@@ -2,11 +2,11 @@
 
 To start the game of life, make whatever changes you want to `map.txt` such that a 5x5 map with a cross in the middle is represented as so:
 
-0 0 1 0 0
-0 0 1 0 0
-1 1 1 1 1
-0 0 1 0 0
-0 0 1 0 0
+0 0 1 0 0  
+0 0 1 0 0  
+1 1 1 1 1  
+0 0 1 0 0  
+0 0 1 0 0  
 
 Of course, you are free to design whatever sort of map you please (the one above, when computed, is actually very boring).
 
